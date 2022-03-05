@@ -1,26 +1,28 @@
 use std::{collections::HashMap, time::SystemTime};
 
-
 // Fastest
 fn main() {
+    calculate_slow();
+    calculate_fast();
+}
+
+fn calculate_fast() {
     let before = SystemTime::now();
     let input = include_str!("input.txt");
     let mut input = parse_input(input);
     let best_position = calculate_best_position_mean(&mut input);
-    println!("{} in {:?}", best_position, before.elapsed());
+    let elapsed = before.elapsed();
+    println!("{} in {:?}", best_position, elapsed);
 }
 
-
 // // Slowest
-// fn main() {
-//     let before = SystemTime::now();
-//     let input = include_str!("input.txt");
-//     let mut input = parse_input(input);
-//     let best_position = calculate_best_position(&mut input);
-//     println!("{} in {:?}", best_position, before.elapsed());
-// }
-
-
+fn calculate_slow() {
+    let before = SystemTime::now();
+    let input = include_str!("input.txt");
+    let mut input = parse_input(input);
+    let best_position = calculate_best_position(&mut input);
+    println!("{} in {:?}", best_position, before.elapsed());
+}
 
 fn parse_input(input: &str) -> Vec<u64> {
     input
@@ -31,7 +33,7 @@ fn parse_input(input: &str) -> Vec<u64> {
 }
 
 fn calculate_best_position(input: &mut Vec<u64>) -> u64 {
-    let max = input.iter().max().unwrap().clone();
+    let max = input.iter().max().unwrap().clone();    
     let possible_numbers = 0..max;
     // let mut best_number = last;
     let mut best_sum = u64::MAX;
@@ -50,7 +52,7 @@ fn calculate_best_position_mean(input: &mut Vec<u64>) -> u64 {
     let max = input.iter().max().unwrap().clone();
     let min = input.iter().min().unwrap().clone();
     let mean = (max + min) / 2;
-    let mut factorial = PrecalcCalculator::new(max as usize);
+    let mut factorial = InlineCalculator::<1862>::new();
 
     let mut best_sum = u64::MAX;
     let mut cur_index = mean;
@@ -60,7 +62,6 @@ fn calculate_best_position_mean(input: &mut Vec<u64>) -> u64 {
         cur_index = cur_index + 1;
         best_sum = cur_sum;
         cur_sum = get_total_fuel(&input, cur_index, &mut factorial);
-        
     }
     let mut cur_index = mean - 1;
     cur_sum = get_total_fuel(&input, cur_index, &mut factorial);
@@ -83,6 +84,27 @@ fn get_total_fuel<T: HasFactiorial>(input: &Vec<u64>, target: u64, calc: &mut T)
 
 trait HasFactiorial {
     fn factorial(&mut self, input: u64) -> u64;
+}
+
+struct InlineCalculator<const N: usize> {
+    map: [u64; N],
+}
+
+impl<const N: usize> InlineCalculator<N> {
+    fn new() -> Self {
+        let range = 1..N;
+        let mut res = [0u64; N];
+        for i in range {
+            res[i] = i as u64 + res[i - 1];
+        }
+        return Self { map: res };
+    }
+}
+
+impl<const N: usize> HasFactiorial for InlineCalculator<N> {
+    fn factorial(&mut self, input: u64) -> u64 {
+        self.map[input as usize]
+    }
 }
 
 struct PrecalcCalculator {
@@ -215,6 +237,16 @@ mod tests {
 
     fn factorial_test_mapped_recursive() {
         let mut factorial = MappedRecursiveFactorialCalculator::default();
+        assert_eq!(0, factorial.factorial(0));
+        assert_eq!(1, factorial.factorial(1));
+        assert_eq!(3, factorial.factorial(2));
+        assert_eq!(6, factorial.factorial(3));
+    }
+
+    #[test]
+
+    fn factorial_test_inlined() {
+        let mut factorial = InlineCalculator::<10>::new();
         assert_eq!(0, factorial.factorial(0));
         assert_eq!(1, factorial.factorial(1));
         assert_eq!(3, factorial.factorial(2));
